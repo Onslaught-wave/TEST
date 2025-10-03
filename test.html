@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Магазин</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        body.dark {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .navbar {
+            background: white;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        body.dark .navbar {
+            background: #2a2a2a;
+        }
+
+        .navbar button {
+            padding: 10px 15px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .navbar button.active {
+            background: #0056b3;
+        }
+
+        .screen {
+            display: none;
+            padding: 20px;
+            padding-bottom: 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        body.dark .search-box input {
+            background: #2a2a2a;
+            color: white;
+            border-color: #444;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
+        body.dark .product-card {
+            background: #2a2a2a;
+        }
+
+        .product-card h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        body.dark .product-card h3 {
+            color: white;
+        }
+
+        .product-card p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        body.dark .product-card p {
+            color: #aaa;
+        }
+
+        .product-card .price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        body.dark .empty-message {
+            color: #aaa;
+        }
+
+        #urlInput {
+            width: 70%;
+            padding: 10px;
+            margin-right: 10px;
+        }
+
+        body.dark #browserFrame {
+            border-color: #444;
+        }
+    </style>
+</head>
+<body>
+   
+    <div class="screen active" id="catalogScreen">
+        <h1>Каталог товаров</h1>
+        <div class="search-box">
+            <input type="text" id="catalogSearch" placeholder="Поиск товаров...">
+        </div>
+        <div class="products-grid" id="catalogGrid"></div>
+    </div>
+
+    <div class="screen" id="favoritesScreen">
+        <h1>Избранное</h1>
+        <div class="search-box">
+            <input type="text" id="favoritesSearch" placeholder="Поиск в избранном...">
+        </div>
+        <div class="products-grid" id="favoritesGrid"></div>
+    </div>
+
+    <!-- Экран Корзина -->
+    <div class="screen" id="cartScreen">
+        <h1>Корзина</h1>
+        <div id="cartItems"></div>
+        <div id="cartTotal" style="font-size: 24px; font-weight: bold; margin: 20px 0;">
+            Итого: 0 ₴
+        </div>
+        <button onclick="clearCart()">Очистить корзину</button>
+    </div>
+
+    <!-- Экран Браузер -->
+    <div class="screen" id="browserScreen">
+        <h1>Браузер</h1>
+        
+        <div style="background: white; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+            <input type="text" id="urlInput" placeholder="Введите URL (например: wikipedia.org)">
+            <button onclick="loadUrl()">Перейти</button>
+        </div>
+        
+        <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px; background: white; border-radius: 5px;">
+            Загрузка...
+        </div>
+        
+        <div id="errorMessage" style="display: none; text-align: center; padding: 20px; color: red; background: white; border-radius: 5px;">
+            Не удалось загрузить
+            <br><button onclick="retryLoad()">Повторить</button>
+        </div>
+        
+        <iframe id="browserFrame" style="width: 100%; height: 60vh; border: 1px solid #ddd; border-radius: 5px; display: none; background: white;"></iframe>
+        
+        <div style="background: white; padding: 10px; margin-top: 10px; display: flex; justify-content: space-around; border-radius: 5px;">
+            <button onclick="browserBack()"> Назад</button>
+            <button onclick="browserForward()">Вперед ▶</button>
+            <button onclick="reloadBrowser()"> Обновить</button>
+            <button onclick="closeBrowser()">Закрыть</button>
+        </div>
+        
+        <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 12px;">
+            <strong>Примечание:</strong> Многие сайты (Google, YouTube, Facebook) блокируют отображение в iframe. Попробуйте: wikipedia.org, w3schools.com, example.com
+        </div>
+    </div>
+
+    <!-- Экран Настройки -->
+    <div class="screen" id="settingsScreen">
+        <h1>Настройки</h1>
+        <div style="padding: 20px; background: white; border-radius: 10px;">
+            <h3>Тема оформления</h3>
+            <select id="themeSelect" onchange="changeTheme()" style="padding: 10px; font-size: 16px; margin-top: 10px;">
+                <option value="light">Светлая</option>
+                <option value="dark">Темная</option>
+                <option value="system">Системная</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Навигация -->
+    <div class="navbar">
+        <button class="active" onclick="showScreen('catalogScreen', this)">Каталог</button>
+        <button onclick="showScreen('favoritesScreen', this)">Избранное</button>
+        <button onclick="showScreen('cartScreen', this)">Корзина</button>
+        <button onclick="showScreen('browserScreen', this)">Браузер</button>
+        <button onclick="showScreen('settingsScreen', this)">Настройки</button>
+    </div>
+
+    <script>
+        const products = [
+            {id: 1, name: 'iPhone 14', description: 'Смартфон Apple', price: 25000},
+            {id: 2, name: 'Samsung Galaxy S23', description: 'Смартфон Samsung', price: 22000},
+            {id: 3, name: 'MacBook Pro', description: 'Ноутбук Apple', price: 45000},
+            {id: 4, name: 'iPad Air', description: 'Планшет Apple', price: 18000},
+            {id: 5, name: 'AirPods Pro', description: 'Беспроводные наушники', price: 7000},
+            {id: 6, name: 'Apple Watch', description: 'Умные часы', price: 12000},
+            {id: 7, name: 'Sony WH-1000XM5', description: 'Наушники с шумоподавлением', price: 10000},
+            {id: 8, name: 'Kindle Paperwhite', description: 'Электронная книга', price: 4000},
+            {id: 9, name: 'GoPro Hero 11', description: 'Экшн-камера', price: 15000},
+            {id: 10, name: 'Nintendo Switch', description: 'Игровая консоль', price: 9000},
+            {id: 11, name: 'PS5', description: 'Игровая консоль Sony', price: 16000},
+            {id: 12, name: 'Xbox Series X', description: 'Игровая консоль Microsoft', price: 15000},
+            {id: 13, name: 'Dell XPS 13', description: 'Ультрабук', price: 35000},
+            {id: 14, name: 'LG OLED TV', description: 'Телевизор 55"', price: 40000},
+            {id: 15, name: 'Dyson V15', description: 'Пылесос', price: 20000}
+        ];
+
+        let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        function showScreen(screenId, button) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.navbar button').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(screenId).classList.add('active');
+            button.classList.add('active');
+
+            if (screenId === 'catalogScreen') renderCatalog();
+            if (screenId === 'favoritesScreen') renderFavorites();
+            if (screenId === 'cartScreen') renderCart();
+        }
+
+        function renderCatalog(searchTerm = '') {
+            const grid = document.getElementById('catalogGrid');
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.description.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            grid.innerHTML = filtered.map(product => `
+                <div class="product-card" onclick="showProductDetail(${product.id})">
+                    <h3>${product.name}</h3>
+                    <p>${product.description}</p>
+                    <div class="price">${product.price} ₴</div>
+                </div>
+            `).join('');
+        }
+
+        function showProductDetail(productId) {
+            const product = products.find(p => p.id === productId);
+            const isFavorite = favorites.includes(productId);
+            
+            const detail = `
+                <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 20px auto;">
+                    <h2>${product.name}</h2>
+                    <p style="color: #666; margin: 20px 0;">${product.description}</p>
+                    <div style="font-size: 28px; font-weight: bold; color: #007bff; margin: 20px 0;">
+                        ${product.price} ₴
+                    </div>
+                    <button onclick="toggleFavorite(${productId})">
+                        ${isFavorite ? 'Убрать из избранного' : 'В избранное'}
+                    </button>
+                    <button onclick="addToCart(${productId})"> В корзину</button>
+                    <button onclick="renderCatalog()">Назад</button>
+                </div>
+            `;
+            
+            document.getElementById('catalogGrid').innerHTML = detail;
+        }
+
+        function toggleFavorite(productId) {
+            if (favorites.includes(productId)) {
+                favorites = favorites.filter(id => id !== productId);
+            } else {
+                favorites.push(productId);
+            }
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            showProductDetail(productId);
+        }
+
+        function renderFavorites(searchTerm = '') {
+            const grid = document.getElementById('favoritesGrid');
+            const favoriteProducts = products.filter(p => favorites.includes(p.id));
+            const filtered = favoriteProducts.filter(p =>
+                p.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="empty-message">Пока пусто</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(product => `
+                <div class="product-card">
+                    <h3>${product.name}</h3>
+                    <p>${product.description}</p>
+                    <div class="price">${product.price} ₴</div>
+                    <button onclick="toggleFavorite(${product.id}); renderFavorites();">Удалить</button>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(productId) {
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.quantity++;
+            } else {
+                cart.push({id: productId, quantity: 1});
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+            alert('Товар добавлен в корзину');
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            
+            if (cart.length === 0) {
+                container.innerHTML = '<div class="empty-message">Корзина пуста</div>';
+                document.getElementById('cartTotal').textContent = 'Итого: 0 ₴';
+                return;
+            }
+
+            let total = 0;
+            container.innerHTML = cart.map(item => {
+                const product = products.find(p => p.id === item.id);
+                const itemTotal = product.price * item.quantity;
+                total += itemTotal;
+
+                return `
+                    <div style="background: white; padding: 20px; margin: 10px 0; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3>${product.name}</h3>
+                            <div style="font-size: 18px; color: #007bff;">${product.price} ₴</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button onclick="changeQuantity(${item.id}, -1)">-</button>
+                            <span style="font-size: 20px; font-weight: bold;">${item.quantity}</span>
+                            <button onclick="changeQuantity(${item.id}, 1)">+</button>
+                            <div style="margin-left: 20px; font-weight: bold;">${itemTotal} ₴</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('cartTotal').textContent = `Итого: ${total} ₴`;
+        }
+
+        function changeQuantity(productId, change) {
+            const item = cart.find(i => i.id === productId);
+            item.quantity += change;
+            
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCart();
+        }
+
+        function clearCart() {
+            if (confirm('Очистить корзину?')) {
+                cart = [];
+                localStorage.setItem('cart', JSON.stringify(cart));
+                renderCart();
+            }
+        }
+
+        document.getElementById('catalogSearch').addEventListener('input', (e) => {
+            renderCatalog(e.target.value);
+        });
+
+        document.getElementById('favoritesSearch').addEventListener('input', (e) => {
+            renderFavorites(e.target.value);
+        });
+
+       
+        let currentUrl = '';
+        let browserHistory = [];
+        let historyIndex = -1;
+
+        function loadUrl() {
+            let url = document.getElementById('urlInput').value.trim();
+            
+            if (!url) return;
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            
+            currentUrl = url;
+            
+            const frame = document.getElementById('browserFrame');
+            const loading = document.getElementById('loadingIndicator');
+            const error = document.getElementById('errorMessage');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            frame.style.display = 'none';
+            
+            frame.src = url;
+            
+            browserHistory = browserHistory.slice(0, historyIndex + 1);
+            browserHistory.push(url);
+            historyIndex++;
+            
+            setTimeout(() => {
+                loading.style.display = 'none';
+                frame.style.display = 'block';
+            }, 2000);
+            
+            frame.onerror = () => {
+                showBrowserError();
+            };
+        }
+
+        function showBrowserError() {
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('browserFrame').style.display = 'none';
+        }
+
+        function retryLoad() {
+            document.getElementById('urlInput').value = currentUrl;
+            loadUrl();
+        }
+
+        function browserBack() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                const url = browserHistory[historyIndex];
+                document.getElementById('urlInput').value = url;
+                document.getElementById('browserFrame').src = url;
+            }
+        }
+
+        function browserForward() {
+            if (historyIndex < browserHistory.length - 1) {
+                historyIndex++;
+                const url = browserHistory[historyIndex];
+                document.getElementById('urlInput').value = url;
+                document.getElementById('browserFrame').src = url;
+            }
+        }
+
+        function reloadBrowser() {
+            const frame = document.getElementById('browserFrame');
+            frame.src = frame.src;
+        }
+
+        function closeBrowser() {
+            document.getElementById('browserFrame').src = 'about:blank';
+            document.getElementById('urlInput').value = '';
+            showScreen('catalogScreen', document.querySelector('.navbar button'));
+        }
+
+        function changeTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            
+            if (theme === 'dark') {
+                document.body.classList.add('dark');
+            } else if (theme === 'light') {
+                document.body.classList.remove('dark');
+            } else {
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.body.classList.add('dark');
+                } else {
+                    document.body.classList.remove('dark');
+                }
+            }
+            
+            localStorage.setItem('theme', theme);
+        }
+
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.getElementById('themeSelect').value = savedTheme;
+            changeTheme();
+            renderCatalog();
+        };
+    </script>
+</body>
+</html>
